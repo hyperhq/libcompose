@@ -3,8 +3,8 @@ package lookup
 import (
 	"strings"
 
-	"github.com/docker/docker/runconfig/opts"
-	"github.com/docker/libcompose/config"
+	"github.com/hyperhq/libcompose/config"
+	"github.com/hyperhq/hypercli/runconfig/opts"
 )
 
 // EnvfileLookup is a structure that implements the project.EnvironmentLookup interface.

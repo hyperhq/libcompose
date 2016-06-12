@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/docker/libcompose/utils"
+	"github.com/hyperhq/libcompose/utils"
 )
 
 // Label represents a docker label.
@@ -12,12 +12,12 @@ type Label string
 
 // Libcompose default labels.
 const (
-	NUMBER  = Label("com.docker.compose.container-number")
-	ONEOFF  = Label("com.docker.compose.oneoff")
-	PROJECT = Label("com.docker.compose.project")
-	SERVICE = Label("com.docker.compose.service")
-	HASH    = Label("com.docker.compose.config-hash")
-	VERSION = Label("com.docker.compose.version")
+	NUMBER  = Label("sh.hyper.compose.container-number")
+	ONEOFF  = Label("sh.hyper.compose.oneoff")
+	PROJECT = Label("sh.hyper.compose.project")
+	SERVICE = Label("sh.hyper.compose.service")
+	HASH    = Label("sh.hyper.compose.config-hash")
+	VERSION = Label("sh.hyper.compose.version")
 )
 
 // EqString returns a label json string representation with the specified value.

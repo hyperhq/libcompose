@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	yaml "github.com/cloudfoundry-incubator/candiedyaml"
-	"github.com/docker/docker/pkg/urlutil"
+	"github.com/hyperhq/hypercli/pkg/urlutil"
 )
 
 var (

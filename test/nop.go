@@ -112,8 +112,8 @@ func (client *NopClient) ContainerPause(ctx context.Context, container string) e
 }
 
 // ContainerRemove kills and removes a container from the docker host
-func (client *NopClient) ContainerRemove(ctx context.Context, container string, options types.ContainerRemoveOptions) error {
-	return errNoEngine
+func (client *NopClient) ContainerRemove(ctx context.Context, container string, options types.ContainerRemoveOptions) ([]string, error) {
+	return []string{}, errNoEngine
 }
 
 // ContainerRename changes the name of a given container
@@ -142,7 +142,7 @@ func (client *NopClient) ContainerStats(ctx context.Context, container string, s
 }
 
 // ContainerStart sends a request to the docker daemon to start a container
-func (client *NopClient) ContainerStart(ctx context.Context, container string) error {
+func (client *NopClient) ContainerStart(ctx context.Context, container, checkpointID string) error {
 	return errNoEngine
 }
 
@@ -217,7 +217,7 @@ func (client *NopClient) ImageList(ctx context.Context, options types.ImageListO
 }
 
 // ImageLoad loads an image in the docker host from the client host
-func (client *NopClient) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (types.ImageLoadResponse, error) {
+func (client *NopClient) ImageLoad(ctx context.Context, input interface{}) (types.ImageLoadResponse, error) {
 	return types.ImageLoadResponse{}, errNoEngine
 }
 
@@ -276,6 +276,11 @@ func (client *NopClient) NetworkInspect(ctx context.Context, networkID string) (
 	return types.NetworkResource{}, errNoEngine
 }
 
+// NetworkInspectWithRaw returns the information for a specific network configured in the docker host and it's raw representation.
+func (cli *NopClient) NetworkInspectWithRaw(ctx context.Context, networkID string) (types.NetworkResource, []byte, error) {
+	return types.NetworkResource{}, []byte{}, errNoEngine
+}
+
 // NetworkList returns the list of networks configured in the docker host
 func (client *NopClient) NetworkList(ctx context.Context, options types.NetworkListOptions) ([]types.NetworkResource, error) {
 	return nil, errNoEngine
@@ -310,6 +315,11 @@ func (client *NopClient) VolumeInspect(ctx context.Context, volumeID string) (ty
 	return types.Volume{}, errNoEngine
 }
 
+// VolumeInspectWithRaw returns the information about a specific volume in the docker host
+func (client *NopClient) VolumeInspectWithRaw(ctx context.Context, volumeID string) (types.Volume, []byte, error) {
+	return types.Volume{}, []byte{}, errNoEngine
+}
+
 // VolumeList returns the volumes configured in the docker host
 func (client *NopClient) VolumeList(ctx context.Context, filter filters.Args) (types.VolumesListResponse, error) {
 	return types.VolumesListResponse{}, errNoEngine
@@ -317,5 +327,60 @@ func (client *NopClient) VolumeList(ctx context.Context, filter filters.Args) (t
 
 // VolumeRemove removes a volume from the docker host
 func (client *NopClient) VolumeRemove(ctx context.Context, volumeID string) error {
+	return errNoEngine
+}
+
+// CheckpointCreate creates a checkpoint from the given container with the given name
+func (client *NopClient) CheckpointCreate(ctx context.Context, container string, options types.CheckpointCreateOptions) error {
+	return errNoEngine
+}
+
+// CheckpointDelete deletes the checkpoint with the given name from the given container
+func (cli *NopClient) CheckpointDelete(ctx context.Context, containerID string, checkpointID string) error {
+	return errNoEngine
+}
+
+// CheckpointList returns the volumes configured in the docker host.
+func (cli *NopClient) CheckpointList(ctx context.Context, container string) ([]types.Checkpoint, error) {
+	return []types.Checkpoint{}, errNoEngine
+}
+
+func (cli *NopClient) FipAllocate(ctx context.Context, count string) ([]string, error) {
+	return []string{}, errNoEngine
+}
+
+func (cli *NopClient) FipRelease(ctx context.Context, ip string) error {
+	return errNoEngine
+}
+
+func (cli *NopClient) FipAssociate(ctx context.Context, ip, container string) error {
+	return errNoEngine
+}
+
+func (cli *NopClient) FipDisassociate(ctx context.Context, container string) (string, error) {
+	return "", errNoEngine
+}
+
+func (cli *NopClient) FipList(ctx context.Context, options types.NetworkListOptions) ([]map[string]string, error) {
+	return []map[string]string{}, errNoEngine
+}
+
+// SnapshotList returns the snapshots configured in the docker host.
+func (cli *NopClient) SnapshotList(ctx context.Context, filter filters.Args) (types.SnapshotsListResponse, error) {
+	return types.SnapshotsListResponse{}, errNoEngine
+}
+
+// SnapshotInspect returns the information about a specific snapshot in the docker host.
+func (cli *NopClient) SnapshotInspect(ctx context.Context, snapshotID string) (types.Snapshot, error) {
+	return types.Snapshot{}, errNoEngine
+}
+
+// SnapshotCreate creates a snapshot in the docker host.
+func (cli *NopClient) SnapshotCreate(ctx context.Context, options types.SnapshotCreateRequest) (types.Snapshot, error) {
+	return types.Snapshot{}, errNoEngine
+}
+
+// SnapshotRemove removes a snapshot from the docker host.
+func (cli *NopClient) SnapshotRemove(ctx context.Context, snapshotID string) error {
 	return errNoEngine
 }

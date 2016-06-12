@@ -10,12 +10,12 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/filters"
-	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/labels"
-	"github.com/docker/libcompose/logger"
-	"github.com/docker/libcompose/project/events"
-	"github.com/docker/libcompose/project/options"
-	"github.com/docker/libcompose/utils"
+	"github.com/hyperhq/libcompose/config"
+	"github.com/hyperhq/libcompose/labels"
+	"github.com/hyperhq/libcompose/logger"
+	"github.com/hyperhq/libcompose/project/events"
+	"github.com/hyperhq/libcompose/project/options"
+	"github.com/hyperhq/libcompose/utils"
 )
 
 type wrapperAction func(*serviceWrapper, map[string]*serviceWrapper)
@@ -276,7 +276,7 @@ func (p *Project) removeOrphanContainers() error {
 			if err := client.ContainerKill(context.Background(), container.ID, "SIGKILL"); err != nil {
 				return err
 			}
-			if err := client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
+			if _, err := client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
 				Force: true,
 			}); err != nil {
 				return err
@@ -343,7 +343,7 @@ func (p *Project) Start(services ...string) error {
 }
 
 // Run executes a one off command (like `docker run image command`).
-func (p *Project) Run(serviceName string, commandParts []string) (int, error) {
+func (p *Project) Run(ctx context.Context, serviceName string, commandParts []string) (int, error) {
 	if !p.ServiceConfigs.Has(serviceName) {
 		return 1, fmt.Errorf("%s is not defined in the template", serviceName)
 	}
@@ -352,7 +352,7 @@ func (p *Project) Run(serviceName string, commandParts []string) (int, error) {
 	err := p.forEach([]string{}, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, events.ServiceRunStart, events.ServiceRun, func(service Service) error {
 			if service.Name() == serviceName {
-				code, err := service.Run(commandParts)
+				code, err := service.Run(ctx, commandParts)
 				exitCode = code
 				return err
 			}

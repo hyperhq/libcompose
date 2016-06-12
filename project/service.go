@@ -3,8 +3,10 @@ package project
 import (
 	"errors"
 
-	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/project/options"
+	"golang.org/x/net/context"
+
+	"github.com/hyperhq/libcompose/config"
+	"github.com/hyperhq/libcompose/project/options"
 )
 
 // Service defines what a libcompose service provides.
@@ -27,7 +29,7 @@ type Service interface {
 	Scale(count int, timeout int) error
 	Pause() error
 	Unpause() error
-	Run(commandParts []string) (int, error)
+	Run(ctx context.Context, commandParts []string) (int, error)
 
 	RemoveImage(imageType options.ImageType) error
 }

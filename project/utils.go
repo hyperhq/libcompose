@@ -19,12 +19,14 @@ func DefaultDependentServices(p *Project, s Service) []ServiceRelationship {
 		result = append(result, NewServiceRelationship(link, RelTypeLink))
 	}
 
-	for _, volumesFrom := range config.VolumesFrom {
-		result = append(result, NewServiceRelationship(volumesFrom, RelTypeVolumesFrom))
-	}
+	/*
+		for _, volumesFrom := range config.VolumesFrom {
+			result = append(result, NewServiceRelationship(volumesFrom, RelTypeVolumesFrom))
+		}
 
-	result = appendNs(p, result, s.Config().NetworkMode, RelTypeNetNamespace)
-	result = appendNs(p, result, s.Config().Ipc, RelTypeIpcNamespace)
+		result = appendNs(p, result, s.Config().NetworkMode, RelTypeNetNamespace)
+		result = appendNs(p, result, s.Config().Ipc, RelTypeIpcNamespace)
+	*/
 
 	return result
 }

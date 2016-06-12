@@ -1,11 +1,10 @@
 package docker
 
 import (
-	"golang.org/x/net/context"
-
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/filters"
+	"golang.org/x/net/context"
 )
 
 // GetContainersByFilter looks up the hosts containers with the specified filters and

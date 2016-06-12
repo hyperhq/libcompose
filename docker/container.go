@@ -10,19 +10,19 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/docker/pkg/promise"
-	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/docker/docker/pkg/term"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
 	"github.com/docker/go-connections/nat"
-	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/labels"
-	"github.com/docker/libcompose/logger"
-	"github.com/docker/libcompose/project"
-	"github.com/docker/libcompose/project/events"
-	util "github.com/docker/libcompose/utils"
+	"github.com/hyperhq/libcompose/config"
+	"github.com/hyperhq/libcompose/labels"
+	"github.com/hyperhq/libcompose/logger"
+	"github.com/hyperhq/libcompose/project"
+	"github.com/hyperhq/libcompose/project/events"
+	util "github.com/hyperhq/libcompose/utils"
+	"github.com/hyperhq/hypercli/pkg/promise"
+	"github.com/hyperhq/hypercli/pkg/stdcopy"
+	"github.com/hyperhq/hypercli/pkg/term"
 )
 
 // Container holds information about a docker container and the service it is tied on.
@@ -139,7 +139,7 @@ func (c *Container) Recreate(imageName string) (*types.ContainerJSON, error) {
 	}
 
 	name := container.Name[1:]
-	newName := fmt.Sprintf("%s_%s", name, container.ID[:12])
+	newName := fmt.Sprintf("%s-%s", name, container.ID[:12])
 	logrus.Debugf("Renaming %s => %s", name, newName)
 	if err := c.client.ContainerRename(context.Background(), container.ID, newName); err != nil {
 		logrus.Errorf("Failed to rename old container %s", c.name)
@@ -152,7 +152,7 @@ func (c *Container) Recreate(imageName string) (*types.ContainerJSON, error) {
 	}
 	logrus.Debugf("Created replacement container %s", newContainer.ID)
 
-	if err := c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
+	if _, err := c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
 		Force:         true,
 		RemoveVolumes: false,
 	}); err != nil {
@@ -241,10 +241,11 @@ func (c *Container) Delete(removeVolume bool) error {
 	}
 
 	if !info.State.Running {
-		return c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
+		_, err := c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
 			Force:         true,
 			RemoveVolumes: removeVolume,
 		})
+		return err
 	}
 
 	return nil
@@ -268,7 +269,7 @@ func (c *Container) IsRunning() (bool, error) {
 // Run creates, start and attach to the container based on the image name,
 // the specified configuration.
 // It will always create a new container.
-func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) (int, error) {
+func (c *Container) Run(ctx context.Context, imageName string, configOverride *config.ServiceConfig) (int, error) {
 	var (
 		errCh       chan error
 		out, stderr io.Writer
@@ -297,7 +298,7 @@ func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) 
 		Stderr: configOverride.Tty,
 	}
 
-	resp, err := c.client.ContainerAttach(context.Background(), container.ID, options)
+	resp, err := c.client.ContainerAttach(ctx, container.ID, options)
 	if err != nil {
 		return -1, err
 	}
@@ -315,7 +316,7 @@ func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) 
 		return holdHijackedConnection(configOverride.Tty, in, out, stderr, resp)
 	})
 
-	if err := c.client.ContainerStart(context.Background(), container.ID); err != nil {
+	if err := c.client.ContainerStart(ctx, container.ID, ""); err != nil {
 		return -1, err
 	}
 
@@ -324,7 +325,7 @@ func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) 
 		return -1, err
 	}
 
-	exitedContainer, err := c.client.ContainerInspect(context.Background(), container.ID)
+	exitedContainer, err := c.client.ContainerInspect(ctx, container.ID)
 	if err != nil {
 		return -1, err
 	}
@@ -400,7 +401,7 @@ func (c *Container) Up(imageName string) error {
 // Start the specified container with the specified host config
 func (c *Container) Start(container *types.ContainerJSON) error {
 	logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Starting container")
-	if err := c.client.ContainerStart(context.Background(), container.ID); err != nil {
+	if err := c.client.ContainerStart(context.Background(), container.ID, ""); err != nil {
 		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
 		return err
 	}
@@ -484,6 +485,11 @@ func (c *Container) createContainer(imageName, oldContainer string, configOverri
 	configWrapper.Config.Labels[labels.ONEOFF.Str()] = oneOffString
 	configWrapper.Config.Labels[labels.NUMBER.Str()] = fmt.Sprint(c.containerNumber)
 	configWrapper.Config.Labels[labels.VERSION.Str()] = ComposeVersion
+	size := "xs"
+	if serviceConfig.Size != "" {
+		size = serviceConfig.Size
+	}
+	configWrapper.Config.Labels["sh_hyper_instancetype"] = size
 
 	err = c.populateAdditionalHostConfig(configWrapper.HostConfig)
 	if err != nil {
@@ -562,30 +568,34 @@ func (c *Container) addLinks(links map[string]string, service project.Service, r
 }
 
 func (c *Container) addIpc(config *container.HostConfig, service project.Service, containers []project.Container) (*container.HostConfig, error) {
-	if len(containers) == 0 {
-		return nil, fmt.Errorf("Failed to find container for IPC %v", c.service.Config().Ipc)
-	}
+	/*
+		if len(containers) == 0 {
+			return nil, fmt.Errorf("Failed to find container for IPC %v", c.service.Config().Ipc)
+		}
 
-	id, err := containers[0].ID()
-	if err != nil {
-		return nil, err
-	}
+		id, err := containers[0].ID()
+		if err != nil {
+			return nil, err
+		}
 
-	config.IpcMode = container.IpcMode("container:" + id)
+		config.IpcMode = container.IpcMode("container:" + id)
+	*/
 	return config, nil
 }
 
 func (c *Container) addNetNs(config *container.HostConfig, service project.Service, containers []project.Container) (*container.HostConfig, error) {
-	if len(containers) == 0 {
-		return nil, fmt.Errorf("Failed to find container for networks ns %v", c.service.Config().NetworkMode)
-	}
+	/*
+		if len(containers) == 0 {
+			return nil, fmt.Errorf("Failed to find container for networks ns %v", c.service.Config().NetworkMode)
+		}
 
-	id, err := containers[0].ID()
-	if err != nil {
-		return nil, err
-	}
+		id, err := containers[0].ID()
+		if err != nil {
+			return nil, err
+		}
 
-	config.NetworkMode = container.NetworkMode("container:" + id)
+		config.NetworkMode = container.NetworkMode("container:" + id)
+	*/
 	return config, nil
 }
 
@@ -626,7 +636,7 @@ func (c *Container) Log(follow bool) error {
 	}
 
 	// FIXME(vdemeester) update container struct to do less API calls
-	name := fmt.Sprintf("%s_%d", c.service.name, c.containerNumber)
+	name := fmt.Sprintf("%s-%d", c.service.name, c.containerNumber)
 	l := c.loggerFactory.Create(name)
 
 	options := types.ContainerLogsOptions{
@@ -635,7 +645,7 @@ func (c *Container) Log(follow bool) error {
 		Follow:     follow,
 		Tail:       "all",
 	}
-	responseBody, err := c.client.ContainerLogs(context.Background(), c.name, options)
+	responseBody, err := c.client.ContainerLogs(context.Background(), container.ID, options)
 	if err != nil {
 		return err
 	}

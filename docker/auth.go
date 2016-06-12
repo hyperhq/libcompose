@@ -1,8 +1,8 @@
 package docker
 
 import (
-	"github.com/docker/docker/registry"
 	"github.com/docker/engine-api/types"
+	"github.com/hyperhq/hypercli/registry"
 )
 
 // AuthLookup defines a method for looking up authentication information

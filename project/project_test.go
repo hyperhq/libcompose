@@ -6,10 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/project/options"
-	"github.com/docker/libcompose/yaml"
+	"github.com/hyperhq/libcompose/config"
+	"github.com/hyperhq/libcompose/project/options"
+	"github.com/hyperhq/libcompose/yaml"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 )
 
 type TestServiceFactory struct {
@@ -32,7 +33,7 @@ func (t *TestService) Name() string {
 	return t.name
 }
 
-func (t *TestService) Run(commandParts []string) (int, error) {
+func (t *TestService) Run(ctx context.Context, commandParts []string) (int, error) {
 	return 0, nil
 }
 
@@ -144,25 +145,40 @@ func TestEnvironmentResolve(t *testing.T) {
 }
 
 func TestParseWithMultipleComposeFiles(t *testing.T) {
+	/*
+			configOne := []byte(`
+		  multiple:
+		    image: tianon/true
+		    ports:
+		      - 8000`)
+
+			configTwo := []byte(`
+		  multiple:
+		    image: busybox
+		    container_name: multi
+		    ports:
+		      - 9000`)
+
+			configThree := []byte(`
+		  multiple:
+		    image: busybox
+		    mem_limit: 40000000
+		    ports:
+		      - 10000`)
+	*/
 	configOne := []byte(`
   multiple:
-    image: tianon/true
-    ports:
-      - 8000`)
+    image: tianon/true`)
 
 	configTwo := []byte(`
   multiple:
     image: busybox
-    container_name: multi
-    ports:
-      - 9000`)
+    container_name: multi`)
 
 	configThree := []byte(`
   multiple:
     image: busybox
-    mem_limit: 40000000
-    ports:
-      - 10000`)
+    size: xxs`)
 
 	p := NewProject(nil, &Context{
 		ComposeBytes: [][]byte{configOne, configTwo},
@@ -175,7 +191,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	multipleConfig, _ := p.ServiceConfigs.Get("multiple")
 	assert.Equal(t, "busybox", multipleConfig.Image)
 	assert.Equal(t, "multi", multipleConfig.ContainerName)
-	assert.Equal(t, []string{"8000", "9000"}, multipleConfig.Ports)
+	//assert.Equal(t, []string{"8000", "9000"}, multipleConfig.Ports)
 
 	p = NewProject(nil, &Context{
 		ComposeBytes: [][]byte{configTwo, configOne},
@@ -188,7 +204,7 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	multipleConfig, _ = p.ServiceConfigs.Get("multiple")
 	assert.Equal(t, "tianon/true", multipleConfig.Image)
 	assert.Equal(t, "multi", multipleConfig.ContainerName)
-	assert.Equal(t, []string{"9000", "8000"}, multipleConfig.Ports)
+	//assert.Equal(t, []string{"9000", "8000"}, multipleConfig.Ports)
 
 	p = NewProject(nil, &Context{
 		ComposeBytes: [][]byte{configOne, configTwo, configThree},
@@ -201,6 +217,6 @@ func TestParseWithMultipleComposeFiles(t *testing.T) {
 	multipleConfig, _ = p.ServiceConfigs.Get("multiple")
 	assert.Equal(t, "busybox", multipleConfig.Image)
 	assert.Equal(t, "multi", multipleConfig.ContainerName)
-	assert.Equal(t, []string{"8000", "9000", "10000"}, multipleConfig.Ports)
-	assert.Equal(t, int64(40000000), multipleConfig.MemLimit)
+	//assert.Equal(t, []string{"8000", "9000", "10000"}, multipleConfig.Ports)
+	//assert.Equal(t, int64(40000000), multipleConfig.MemLimit)
 }

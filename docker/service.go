@@ -9,13 +9,11 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
-	"github.com/docker/go-connections/nat"
-	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/docker/builder"
-	"github.com/docker/libcompose/labels"
-	"github.com/docker/libcompose/project"
-	"github.com/docker/libcompose/project/options"
-	"github.com/docker/libcompose/utils"
+	"github.com/hyperhq/libcompose/config"
+	"github.com/hyperhq/libcompose/labels"
+	"github.com/hyperhq/libcompose/project"
+	"github.com/hyperhq/libcompose/project/options"
+	"github.com/hyperhq/libcompose/utils"
 )
 
 // Service is a project.Service implementations.
@@ -114,12 +112,14 @@ func (s *Service) ensureImageExists(noBuild bool) (string, error) {
 		return "", err
 	}
 
-	if s.Config().Build.Context != "" {
-		if noBuild {
-			return "", fmt.Errorf("Service %q needs to be built, but no-build was specified", s.name)
+	/*
+		if s.Config().Build.Context != "" {
+			if noBuild {
+				return "", fmt.Errorf("Service %q needs to be built, but no-build was specified", s.name)
+			}
+			return s.imageName(), s.build(options.Build{})
 		}
-		return s.imageName(), s.build(options.Build{})
-	}
+	*/
 
 	return s.imageName(), s.Pull()
 }
@@ -149,19 +149,7 @@ func (s *Service) Build(buildOptions options.Build) error {
 }
 
 func (s *Service) build(buildOptions options.Build) error {
-	if s.Config().Build.Context == "" {
-		return fmt.Errorf("Specified service does not have a build section")
-	}
-	builder := &builder.DaemonBuilder{
-		Client:           s.context.ClientFactory.Create(s),
-		ContextDirectory: s.Config().Build.Context,
-		Dockerfile:       s.Config().Build.Dockerfile,
-		AuthConfigs:      s.context.AuthLookup.All(),
-		NoCache:          buildOptions.NoCache,
-		ForceRemove:      buildOptions.ForceRemove,
-		Pull:             buildOptions.Pull,
-	}
-	return builder.Build(s.imageName())
+	return nil
 }
 
 func (s *Service) constructContainers(imageName string, count int) ([]*Container, error) {
@@ -224,7 +212,7 @@ func (s *Service) Up(options options.Up) error {
 }
 
 // Run implements Service.Run. It runs a one of command within the service container.
-func (s *Service) Run(commandParts []string) (int, error) {
+func (s *Service) Run(ctx context.Context, commandParts []string) (int, error) {
 	imageName, err := s.ensureImageExists(false)
 	if err != nil {
 		return -1, err
@@ -241,7 +229,7 @@ func (s *Service) Run(commandParts []string) (int, error) {
 
 	c := NewOneOffContainer(client, containerName, containerNumber, s)
 
-	return c.Run(imageName, &config.ServiceConfig{Command: commandParts, Tty: true, StdinOpen: true})
+	return c.Run(ctx, imageName, &config.ServiceConfig{Command: commandParts, Tty: true, StdinOpen: true})
 }
 
 // Info implements Service.Info. It returns an project.InfoSet with the containers
@@ -474,19 +462,21 @@ func (s *Service) Containers() ([]project.Container, error) {
 }
 
 func (s *Service) specificiesHostPort() bool {
-	_, bindings, err := nat.ParsePortSpecs(s.Config().Ports)
+	/*
+		_, bindings, err := nat.ParsePortSpecs(s.Config().Ports)
 
-	if err != nil {
-		fmt.Println(err)
-	}
+		if err != nil {
+			fmt.Println(err)
+		}
 
-	for _, portBindings := range bindings {
-		for _, portBinding := range portBindings {
-			if portBinding.HostPort != "" {
-				return true
+		for _, portBindings := range bindings {
+			for _, portBinding := range portBindings {
+				if portBinding.HostPort != "" {
+					return true
+				}
 			}
 		}
-	}
+	*/
 
 	return false
 }

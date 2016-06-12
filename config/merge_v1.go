@@ -6,7 +6,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	yaml "github.com/cloudfoundry-incubator/candiedyaml"
-	"github.com/docker/libcompose/utils"
+	"github.com/hyperhq/libcompose/utils"
 )
 
 // MergeServicesV1 merges a v1 compose file into an existing set of service configs
@@ -20,9 +20,10 @@ func MergeServicesV1(existingServices *ServiceConfigs, environmentLookup Environ
 		return nil, err
 	}
 
-	if err := validate(datas); err != nil {
+	if err := validate(datas, "v1"); err != nil {
 		return nil, err
 	}
+	logrus.Infof("%#v", datas)
 
 	for name, data := range datas {
 		data, err := parseV1(resourceLookup, environmentLookup, file, data, datas)
@@ -64,7 +65,7 @@ func parseV1(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup,
 		return nil, err
 	}
 
-	serviceData = resolveContextV1(inFile, serviceData)
+	//serviceData = resolveContextV1(inFile, serviceData)
 
 	value, ok := serviceData["extends"]
 	if !ok {
@@ -112,7 +113,7 @@ func parseV1(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup,
 			return nil, err
 		}
 
-		if err := validate(baseRawServices); err != nil {
+		if err := validate(baseRawServices, "v1"); err != nil {
 			return nil, err
 		}
 

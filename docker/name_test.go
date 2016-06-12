@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"github.com/docker/engine-api/types"
-	"github.com/docker/libcompose/labels"
-	"github.com/docker/libcompose/test"
+	"github.com/hyperhq/libcompose/labels"
+	"github.com/hyperhq/libcompose/test"
+	"golang.org/x/net/context"
 )
 
 func TestSingleNamer(t *testing.T) {
@@ -98,7 +97,7 @@ func TestDefaultNamer(t *testing.T) {
 				fmt.Sprintf("%s=", labels.SERVICE.Str()),
 				fmt.Sprintf("%s=False", labels.ONEOFF.Str()),
 			},
-			expectedName:   "__1",
+			expectedName:   "--1",
 			expectedNumber: 1,
 		},
 		{
@@ -111,7 +110,7 @@ func TestDefaultNamer(t *testing.T) {
 				fmt.Sprintf("%s=service", labels.SERVICE.Str()),
 				fmt.Sprintf("%s=False", labels.ONEOFF.Str()),
 			},
-			expectedName:   "project_service_1",
+			expectedName:   "project-service-1",
 			expectedNumber: 1,
 		},
 		{
@@ -130,7 +129,7 @@ func TestDefaultNamer(t *testing.T) {
 				fmt.Sprintf("%s=service", labels.SERVICE.Str()),
 				fmt.Sprintf("%s=False", labels.ONEOFF.Str()),
 			},
-			expectedName:   "project_service_2",
+			expectedName:   "project-service-2",
 			expectedNumber: 2,
 		},
 		{
@@ -149,7 +148,7 @@ func TestDefaultNamer(t *testing.T) {
 				fmt.Sprintf("%s=anotherservice", labels.SERVICE.Str()),
 				fmt.Sprintf("%s=False", labels.ONEOFF.Str()),
 			},
-			expectedName:   "project_anotherservice_11",
+			expectedName:   "project-anotherservice-11",
 			expectedNumber: 11,
 		},
 	}

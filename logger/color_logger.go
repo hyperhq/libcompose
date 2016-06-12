@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/docker/libcompose/logger"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -30,7 +29,7 @@ func NewColorLoggerFactory() *ColorLoggerFactory {
 }
 
 // Create implements logger.Factory.Create.
-func (c *ColorLoggerFactory) Create(name string) logger.Logger {
+func (c *ColorLoggerFactory) Create(name string) Logger {
 	if c.maxLength < len(name) {
 		c.maxLength = len(name)
 	}

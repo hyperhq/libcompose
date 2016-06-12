@@ -1,14 +1,14 @@
 package docker
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/docker/client"
-	"github.com/docker/libcompose/lookup"
-	"github.com/docker/libcompose/project"
+	"github.com/hyperhq/libcompose/config"
+	"github.com/hyperhq/libcompose/lookup"
+	"github.com/hyperhq/libcompose/project"
 )
 
 // ComposeVersion is name of docker-compose.yml file syntax supported version
@@ -46,11 +46,7 @@ func NewProject(context *Context) (project.APIProject, error) {
 	}
 
 	if context.ClientFactory == nil {
-		factory, err := project.NewDefaultClientFactory(client.Options{})
-		if err != nil {
-			return nil, err
-		}
-		context.ClientFactory = factory
+		return nil, fmt.Errorf("please provide the client to operate the Hyper_")
 	}
 
 	// FIXME(vdemeester) Remove the context duplication ?

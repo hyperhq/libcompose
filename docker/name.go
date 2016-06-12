@@ -9,10 +9,10 @@ import (
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/filters"
-	"github.com/docker/libcompose/labels"
+	"github.com/hyperhq/libcompose/labels"
 )
 
-const format = "%s_%s_%d"
+const format = "%s-%s-%d"
 
 // Namer defines method to provide container name.
 type Namer interface {
@@ -79,7 +79,7 @@ func NewNamer(client client.APIClient, project, service string, oneOff bool) (Na
 func (i *defaultNamer) Next() (string, int) {
 	service := i.service
 	if i.oneOff {
-		service = i.service + "_run"
+		service = i.service + "-run"
 	}
 	name := fmt.Sprintf(format, i.project, service, i.currentNumber)
 	number := i.currentNumber

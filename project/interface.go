@@ -1,8 +1,9 @@
 package project
 
 import (
-	"github.com/docker/libcompose/project/events"
-	"github.com/docker/libcompose/project/options"
+	"github.com/hyperhq/libcompose/project/events"
+	"github.com/hyperhq/libcompose/project/options"
+	"golang.org/x/net/context"
 )
 
 // APIProject is an interface defining the methods a libcompose project should implement.
@@ -22,7 +23,7 @@ type APIProject interface {
 	Port(index int, protocol, serviceName, privatePort string) (string, error)
 	Pull(services ...string) error
 	Restart(timeout int, services ...string) error
-	Run(serviceName string, commandParts []string) (int, error)
+	Run(ctx context.Context, serviceName string, commandParts []string) (int, error)
 	Scale(timeout int, servicesScale map[string]int) error
 	Start(services ...string) error
 	Stop(timeout int, services ...string) error

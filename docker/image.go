@@ -10,12 +10,12 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/docker/pkg/jsonmessage"
-	"github.com/docker/docker/pkg/term"
-	"github.com/docker/docker/reference"
-	"github.com/docker/docker/registry"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
+	"github.com/hyperhq/hypercli/pkg/jsonmessage"
+	"github.com/hyperhq/hypercli/pkg/term"
+	"github.com/hyperhq/hypercli/reference"
+	"github.com/hyperhq/hypercli/registry"
 )
 
 func removeImage(client client.APIClient, image string) error {

@@ -1,18 +1,15 @@
 package docker
 
 import (
-	"fmt"
 	"strings"
 
-	"github.com/docker/docker/runconfig/opts"
 	"github.com/docker/engine-api/types/container"
 	"github.com/docker/engine-api/types/network"
 	"github.com/docker/engine-api/types/strslice"
-	"github.com/docker/go-connections/nat"
-	"github.com/docker/go-units"
-	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/project"
-	"github.com/docker/libcompose/utils"
+	"github.com/hyperhq/libcompose/config"
+	"github.com/hyperhq/libcompose/project"
+	"github.com/hyperhq/libcompose/utils"
+	"github.com/hyperhq/hypercli/runconfig/opts"
 )
 
 // ConfigWrapper wraps Config, HostConfig and NetworkingConfig for a container.
@@ -49,8 +46,9 @@ func ConvertToAPI(s *Service) (*ConfigWrapper, error) {
 	}
 
 	result := ConfigWrapper{
-		Config:     config,
-		HostConfig: hostConfig,
+		Config:           config,
+		HostConfig:       hostConfig,
+		NetworkingConfig: &network.NetworkingConfig{},
 	}
 	return &result, nil
 }
@@ -82,6 +80,7 @@ func restartPolicy(c *config.ServiceConfig) (*container.RestartPolicy, error) {
 	return &container.RestartPolicy{Name: restart.Name, MaximumRetryCount: restart.MaximumRetryCount}, nil
 }
 
+/*
 func ports(c *config.ServiceConfig) (map[nat.Port]struct{}, nat.PortMap, error) {
 	ports, binding, err := nat.ParsePortSpecs(c.Ports)
 	if err != nil {
@@ -112,6 +111,7 @@ func ports(c *config.ServiceConfig) (map[nat.Port]struct{}, nat.PortMap, error) 
 	}
 	return exposedPorts, portBindings, nil
 }
+*/
 
 // Convert converts a service configuration to an docker API structures (Config and HostConfig)
 func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *container.HostConfig, error) {
@@ -120,91 +120,105 @@ func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *
 		return nil, nil, err
 	}
 
-	exposedPorts, portBindings, err := ports(c)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	deviceMappings, err := parseDevices(c.Devices)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var volumesFrom []string
-	if c.VolumesFrom != nil {
-		volumesFrom, err = getVolumesFrom(c.VolumesFrom, ctx.Project.ServiceConfigs, ctx.ProjectName)
+	/*
+		exposedPorts, portBindings, err := ports(c)
 		if err != nil {
 			return nil, nil, err
 		}
-	}
 
-	config := &container.Config{
-		Entrypoint:   strslice.StrSlice(utils.CopySlice(c.Entrypoint)),
-		Hostname:     c.Hostname,
-		Domainname:   c.DomainName,
-		User:         c.User,
-		Env:          utils.CopySlice(c.Environment),
-		Cmd:          strslice.StrSlice(utils.CopySlice(c.Command)),
-		Image:        c.Image,
-		Labels:       utils.CopyMap(c.Labels),
-		ExposedPorts: exposedPorts,
-		Tty:          c.Tty,
-		OpenStdin:    c.StdinOpen,
-		WorkingDir:   c.WorkingDir,
-		Volumes:      volumes(c, ctx),
-		MacAddress:   c.MacAddress,
-	}
-
-	ulimits := []*units.Ulimit{}
-	if c.Ulimits.Elements != nil {
-		for _, ulimit := range c.Ulimits.Elements {
-			ulimits = append(ulimits, &units.Ulimit{
-				Name: ulimit.Name,
-				Soft: ulimit.Soft,
-				Hard: ulimit.Hard,
-			})
+		deviceMappings, err := parseDevices(c.Devices)
+		if err != nil {
+			return nil, nil, err
 		}
+
+		var volumesFrom []string
+		if c.VolumesFrom != nil {
+			volumesFrom, err = getVolumesFrom(c.VolumesFrom, ctx.Project.ServiceConfigs, ctx.ProjectName)
+			if err != nil {
+				return nil, nil, err
+			}
+		}
+	*/
+	config := &container.Config{
+		Entrypoint: strslice.StrSlice(utils.CopySlice(c.Entrypoint)),
+		Hostname:   c.Hostname,
+		Domainname: c.DomainName,
+		//User:         c.User,
+		Env:    utils.CopySlice(c.Environment),
+		Cmd:    strslice.StrSlice(utils.CopySlice(c.Command)),
+		Image:  c.Image,
+		Labels: utils.CopyMap(c.Labels),
+		//ExposedPorts: exposedPorts,
+		Tty:        c.Tty,
+		OpenStdin:  c.StdinOpen,
+		WorkingDir: c.WorkingDir,
+		Volumes:    volumes(c, ctx),
+		//MacAddress: c.MacAddress,
 	}
 
-	resources := container.Resources{
-		CgroupParent: c.CgroupParent,
-		Memory:       c.MemLimit,
-		MemorySwap:   c.MemSwapLimit,
-		CPUShares:    c.CPUShares,
-		CPUQuota:     c.CPUQuota,
-		CpusetCpus:   c.CPUSet,
-		Ulimits:      ulimits,
-		Devices:      deviceMappings,
-	}
+	/*
+		ulimits := []*units.Ulimit{}
+		if c.Ulimits.Elements != nil {
+			for _, ulimit := range c.Ulimits.Elements {
+				ulimits = append(ulimits, &units.Ulimit{
+					Name: ulimit.Name,
+					Soft: ulimit.Soft,
+					Hard: ulimit.Hard,
+				})
+			}
+		}
 
+		resources := container.Resources{
+			CgroupParent: c.CgroupParent,
+			Memory:       c.MemLimit,
+			MemorySwap:   c.MemSwapLimit,
+			CPUShares:    c.CPUShares,
+			CPUQuota:     c.CPUQuota,
+			CpusetCpus:   c.CPUSet,
+			Ulimits:      ulimits,
+			Devices:      deviceMappings,
+		}
+
+		dns := strslice.StrSlice(c.DNS)
+		dnsSearch := strslice.StrSlice(c.DNSSearch)
+	*/
 	hostConfig := &container.HostConfig{
-		VolumesFrom: volumesFrom,
-		CapAdd:      strslice.StrSlice(utils.CopySlice(c.CapAdd)),
-		CapDrop:     strslice.StrSlice(utils.CopySlice(c.CapDrop)),
-		ExtraHosts:  utils.CopySlice(c.ExtraHosts),
-		Privileged:  c.Privileged,
-		Binds:       Filter(c.Volumes, isBind),
-		DNS:         utils.CopySlice(c.DNS),
-		DNSSearch:   utils.CopySlice(c.DNSSearch),
-		LogConfig: container.LogConfig{
-			Type:   c.Logging.Driver,
-			Config: utils.CopyMap(c.Logging.Options),
-		},
-		NetworkMode:    container.NetworkMode(c.NetworkMode),
-		ReadonlyRootfs: c.ReadOnly,
-		PidMode:        container.PidMode(c.Pid),
-		UTSMode:        container.UTSMode(c.Uts),
-		IpcMode:        container.IpcMode(c.Ipc),
-		PortBindings:   portBindings,
-		RestartPolicy:  *restartPolicy,
-		SecurityOpt:    utils.CopySlice(c.SecurityOpt),
-		VolumeDriver:   c.VolumeDriver,
-		Resources:      resources,
+		/*
+			VolumesFrom: volumesFrom,
+			CapAdd:      strslice.New(c.CapAdd...),
+			CapDrop:     strslice.New(c.CapDrop...),
+			ExtraHosts:  utils.CopySlice(c.ExtraHosts),
+			Privileged:  c.Privileged,
+		*/
+		Binds: Filter(c.Volumes, isBind),
+		/*
+			DNS:         (&dns).Slice(),
+			DNSSearch:   (&dnsSearch).Slice(),
+			LogConfig: container.LogConfig{
+				Type:   c.Logging.Driver,
+				Config: utils.CopyMap(c.Logging.Options),
+			},
+		*/
+		NetworkMode: "bridge",
+		/*
+			ReadonlyRootfs: c.ReadOnly,
+			PidMode:        container.PidMode(c.Pid),
+			UTSMode:        container.UTSMode(c.Uts),
+			IpcMode:        container.IpcMode(c.Ipc),
+			PortBindings:   portBindings,
+		*/
+		RestartPolicy: *restartPolicy,
+		/*
+			SecurityOpt:    utils.CopySlice(c.SecurityOpt),
+			VolumeDriver:   c.VolumeDriver,
+			Resources:      resources,
+		*/
 	}
 
 	return config, hostConfig, nil
 }
 
+/*
 func getVolumesFrom(volumesFrom []string, serviceConfigs *config.ServiceConfigs, projectName string) ([]string, error) {
 	volumes := []string{}
 	for _, volumeFrom := range volumesFrom {
@@ -240,3 +254,4 @@ func parseDevices(devices []string) ([]container.DeviceMapping, error) {
 
 	return deviceMappings, nil
 }
+*/

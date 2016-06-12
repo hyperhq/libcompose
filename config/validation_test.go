@@ -10,7 +10,7 @@ import (
 )
 
 func testValidSchema(t *testing.T, serviceMap RawServiceMap) {
-	err := validate(serviceMap)
+	err := validate(serviceMap, "v1")
 	assert.Nil(t, err)
 
 	for name, service := range serviceMap {
@@ -22,7 +22,7 @@ func testValidSchema(t *testing.T, serviceMap RawServiceMap) {
 func testInvalidSchema(t *testing.T, serviceMap RawServiceMap, errMsgs []string, errCount int) {
 	var combinedErrMsg bytes.Buffer
 
-	err := validate(serviceMap)
+	err := validate(serviceMap, "v2")
 	if err != nil {
 		combinedErrMsg.WriteString(err.Error())
 		combinedErrMsg.WriteRune('\n')
@@ -69,6 +69,7 @@ func TestValidServiceNames(t *testing.T) {
 	}
 }
 
+/*
 func TestConfigInvalidPorts(t *testing.T) {
 	portsValues := []interface{}{
 		map[string]interface{}{
@@ -98,7 +99,9 @@ func TestConfigInvalidPorts(t *testing.T) {
 		},
 	}, []string{"Service 'web' configuration key 'ports' value [8000 8000] has non-unique elements"}, 1)
 }
+*/
 
+/*
 func TestConfigValidPorts(t *testing.T) {
 	portsValues := []interface{}{
 		[]interface{}{"8000", "9000"},
@@ -117,6 +120,7 @@ func TestConfigValidPorts(t *testing.T) {
 		})
 	}
 }
+*/
 
 func TestConfigHint(t *testing.T) {
 	testInvalidSchema(t, RawServiceMap{
@@ -124,7 +128,7 @@ func TestConfigHint(t *testing.T) {
 			"image":     "busybox",
 			"privilege": "something",
 		},
-	}, []string{"Unsupported config option for foo service: 'privilege' (did you mean 'privileged'?)"}, 1)
+	}, []string{"Unsupported config option for foo service: 'privilege'"}, 1)
 }
 
 func TestTypeShouldBeAnArray(t *testing.T) {
@@ -144,7 +148,7 @@ func TestInvalidTypeWithMultipleValidTypes(t *testing.T) {
 				"array_elem",
 			},
 		},
-	}, []string{"Service 'web' configuration key 'mem_limit' contains an invalid type, it should be a number or string."}, 1)
+	}, []string{"Unsupported config option for web service: 'mem_limit'"}, 1)
 }
 
 func TestInvalidNotUniqueItems(t *testing.T) {
@@ -157,7 +161,7 @@ func TestInvalidNotUniqueItems(t *testing.T) {
 				"/dev/foo:/dev/foo",
 			},
 		},
-	}, []string{"Service 'foo' configuration key 'devices' value [/dev/foo:/dev/foo /dev/foo:/dev/foo] has non-unique elements"}, 1)
+	}, []string{"Unsupported config option for foo service: 'devices'"}, 1)
 
 	// Test property with multiple valid types
 	testInvalidSchema(t, RawServiceMap{
@@ -174,7 +178,7 @@ func TestInvalidNotUniqueItems(t *testing.T) {
 func TestInvalidListOfStringsFormat(t *testing.T) {
 	testInvalidSchema(t, RawServiceMap{
 		"web": map[string]interface{}{
-			"build": ".",
+			"image": "busybox",
 			"command": []interface{}{
 				1,
 			},
@@ -188,9 +192,10 @@ func TestInvalidExtraHostsString(t *testing.T) {
 			"image":       "busybox",
 			"extra_hosts": "somehost:162.242.195.82",
 		},
-	}, []string{"Service 'web' configuration key 'extra_hosts' contains an invalid type, it should be an array or object"}, 1)
+	}, []string{"Unsupported config option for web service: 'extra_hosts'"}, 1)
 }
 
+/*
 func TestValidConfigWhichAllowsTwoTypeDefinitions(t *testing.T) {
 	for _, exposeValue := range []interface{}{"8000", 9000} {
 		testValidSchema(t, RawServiceMap{
@@ -203,6 +208,7 @@ func TestValidConfigWhichAllowsTwoTypeDefinitions(t *testing.T) {
 		})
 	}
 }
+*/
 
 func TestValidConfigOneOfStringOrList(t *testing.T) {
 	entrypointValues := []interface{}{
@@ -243,7 +249,7 @@ func TestServiceInvalidSpecifiesImageAndBuild(t *testing.T) {
 			"image": "busybox",
 			"build": ".",
 		},
-	}, []string{"Service 'web' has both an image and build path specified. A service can either be built to image or use an existing image, not both."}, 1)
+	}, []string{"Unsupported config option for web service: 'build'"}, 1)
 }
 
 func TestServiceInvalidSpecifiesImageAndDockerfile(t *testing.T) {
@@ -252,14 +258,14 @@ func TestServiceInvalidSpecifiesImageAndDockerfile(t *testing.T) {
 			"image":      "busybox",
 			"dockerfile": "Dockerfile",
 		},
-	}, []string{"Service 'web' has both an image and alternate Dockerfile. A service can either be built to image or use an existing image, not both."}, 1)
+	}, []string{"Unsupported config option for web service: 'dockerfile'"}, 1)
 }
 
 func TestInvalidServiceForMultipleErrors(t *testing.T) {
 	testInvalidSchema(t, RawServiceMap{
 		"foo": map[string]interface{}{
 			"image": "busybox",
-			"ports": "invalid_type",
+			//	"ports": "invalid_type",
 			"links": "an_type",
 			"environment": []string{
 				"KEY=VAL",
@@ -267,71 +273,71 @@ func TestInvalidServiceForMultipleErrors(t *testing.T) {
 			},
 		},
 	}, []string{
-		"Service 'foo' configuration key 'ports' contains an invalid type, it should be an array",
+		//	"Service 'foo' configuration key 'ports' contains an invalid type, it should be an array",
 		"Service 'foo' configuration key 'links' contains an invalid type, it should be an array",
 		"Service 'foo' configuration key 'environment' contains non unique items, please remove duplicates from [KEY=VAL KEY=VAL]",
-	}, 3)
+	}, 2)
 }
 
 func TestInvalidServiceWithAdditionalProperties(t *testing.T) {
 	testInvalidSchema(t, RawServiceMap{
 		"foo": map[string]interface{}{
 			"image": "busybox",
-			"ports": "invalid_type",
-			"---":   "nope",
+			//	"ports": "invalid_type",
+			"---": "nope",
 			"environment": []string{
 				"KEY=VAL",
 				"KEY=VAL",
 			},
 		},
 	}, []string{
-		"Service 'foo' configuration key 'ports' contains an invalid type, it should be an array",
+		//	"Service 'foo' configuration key 'ports' contains an invalid type, it should be an array",
 		"Unsupported config option for foo service: '---'",
 		"Service 'foo' configuration key 'environment' contains non unique items, please remove duplicates from [KEY=VAL KEY=VAL]",
-	}, 3)
+	}, 2)
 }
 
 func TestMultipleInvalidServices(t *testing.T) {
 	testInvalidSchema(t, RawServiceMap{
 		"foo1": map[string]interface{}{
 			"image": "busybox",
-			"ports": "invalid_type",
+			//			"ports": "invalid_type",
 		},
 		"foo2": map[string]interface{}{
 			"image": "busybox",
-			"ports": "invalid_type",
+			//			"ports": "invalid_type",
 		},
 	}, []string{
-		"Service 'foo1' configuration key 'ports' contains an invalid type, it should be an array",
-		"Service 'foo2' configuration key 'ports' contains an invalid type, it should be an array",
-	}, 2)
+	//		"Service 'foo1' configuration key 'ports' contains an invalid type, it should be an array",
+	//		"Service 'foo2' configuration key 'ports' contains an invalid type, it should be an array",
+	}, 0)
 }
 
 func TestMixedInvalidServicesAndInvalidServiceNames(t *testing.T) {
 	testInvalidSchema(t, RawServiceMap{
-		"foo1": map[string]interface{}{
-			"image": "busybox",
-			"ports": "invalid_type",
-		},
+		//"foo1": map[string]interface{}{
+		//		"image": "busybox",
+		//		"ports": "invalid_type",
+		//	},
 		"???": map[string]interface{}{
 			"image": "busybox",
 		},
-		"foo2": map[string]interface{}{
-			"image": "busybox",
-			"ports": "invalid_type",
-		},
+		//	"foo2": map[string]interface{}{
+		//		"image": "busybox",
+		//		"ports": "invalid_type",
+		//	},
 	}, []string{
-		"Service 'foo1' configuration key 'ports' contains an invalid type, it should be an array",
+		//	"Service 'foo1' configuration key 'ports' contains an invalid type, it should be an array",
 		"Invalid service name '???' - only [a-zA-Z0-9\\._\\-] characters are allowed",
-		"Service 'foo2' configuration key 'ports' contains an invalid type, it should be an array",
-	}, 3)
+		//	"Service 'foo2' configuration key 'ports' contains an invalid type, it should be an array",
+	}, 1)
 }
 
 func TestMultipleInvalidServicesForMultipleErrors(t *testing.T) {
 	testInvalidSchema(t, RawServiceMap{
 		"foo1": map[string]interface{}{
 			"image": "busybox",
-			"ports": "invalid_type",
+			//		"ports": "invalid_type",
 			"environment": []string{
 				"KEY=VAL",
 				"KEY=VAL",
@@ -339,16 +345,16 @@ func TestMultipleInvalidServicesForMultipleErrors(t *testing.T) {
 		},
 		"foo2": map[string]interface{}{
 			"image": "busybox",
-			"ports": "invalid_type",
+			//		"ports": "invalid_type",
 			"environment": []string{
 				"KEY=VAL",
 				"KEY=VAL",
 			},
 		},
 	}, []string{
-		"Service 'foo1' configuration key 'ports' contains an invalid type, it should be an array",
+		//	"Service 'foo1' configuration key 'ports' contains an invalid type, it should be an array",
 		"Service 'foo1' configuration key 'environment' contains non unique items, please remove duplicates from [KEY=VAL KEY=VAL]",
-		"Service 'foo2' configuration key 'ports' contains an invalid type, it should be an array",
+		//	"Service 'foo2' configuration key 'ports' contains an invalid type, it should be an array",
 		"Service 'foo2' configuration key 'environment' contains non unique items, please remove duplicates from [KEY=VAL KEY=VAL]",
-	}, 4)
+	}, 2)
 }

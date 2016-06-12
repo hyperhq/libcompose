@@ -1,7 +1,7 @@
 package project
 
 import (
-	"github.com/docker/libcompose/project/options"
+	"github.com/hyperhq/libcompose/project/options"
 )
 
 // EmptyService is a struct that implements Service but does nothing.

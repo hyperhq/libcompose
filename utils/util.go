@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/Sirupsen/logrus"
-
 	yaml "github.com/cloudfoundry-incubator/candiedyaml"
 )
 
